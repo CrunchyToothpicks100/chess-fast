@@ -1,11 +1,11 @@
 # Chess bot
 
-(made with codex, I did not write this!)
-
 A C++20 chess engine prototype using named modules. The current executable
 creates the starting board at compile time and prints its piece values as an
 8 × 8 hexadecimal grid. Move generation, search, and a playable interface are
 not implemented yet.
+
+**AI NOTE**: This README was mostly written with Codex. However, every line of code is typed with a keyboard. AI has been used for research into C++ shenanigans like modules
 
 ## Project layout
 

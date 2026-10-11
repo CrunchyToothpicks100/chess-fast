@@ -132,8 +132,10 @@ using SquareSet = std::unordered_set<int8_t>;
 struct Tactical {
   SquareSet att_by_set;
   SquareSet def_by_set;
+  SquareSet pin_by_set;
   SquareSet att_set;
   SquareSet def_set;
+  SquareSet pin_set;
 };
 
 export class Square {
@@ -184,6 +186,23 @@ public:
     }
   }
 
+  void activeScanView(const int8_t &color, Tactical &tact,
+                      const std::array<int8_t, 64> &pos_board,
+                      const VecView &vec_view) {
+    for (int8_t square : vec_view) {
+      int8_t piece = pos_board[square];
+      if (piece & 0b11000000 && piece & 0b00010010) {
+        if (piece & color) {
+          tact.def_by_set.insert(square);
+          break;
+        } else {
+          tact.att_by_set.insert(square);
+          break;
+        }
+      }
+    }
+  }
+
   // find defenders and attackers north, south, east, and west
   // Modifies the Tactical
   void rookPassiveScan(const int8_t &color, Tactical &tact,
@@ -209,5 +228,12 @@ public:
     for (const auto &vec_view : queen_vec_views) {
       passiveScanView(color, tact, pos_board, vec_view);
     }
+  }
+
+  // find defenders and attackers (knights)
+  // Modifies the Tactical
+  void knightPassiveScan(const int8_t &color, Tactical &tact,
+                         const std::array<int8_t, 64> &pos_board) {
+    passiveScanView(color, tact, pos_board, this->knight);
   }
 };

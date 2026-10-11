@@ -31,6 +31,9 @@ consteval std::array<int8_t, 64> make_pos_board() {
   for (int i = 0; i < 16; ++i)
     board[i] |= black;
 
+  for (int i = 48; i < 64; ++i)
+    board[i] |= white;
+
   return board;
 }
 // clang-format on
