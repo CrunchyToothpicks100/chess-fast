@@ -11,16 +11,16 @@ module;
 export module Square;
 
 enum class Piece : uint8_t {
-  empty,  // 0
-  pawn,   // 1
-  rook,   // 2
-  knight, // 3
-  bishop, // 4
-  queen,  // 5
-  king,   // 6
+  empty = 0,  // 0000 0000
+  pawn = 1,   // 0000 0001
+  knight = 2, // 0000 0010
+  bishop = 4, // 0000 0100
+  rook = 8,   // 0000 1000
+  queen = 12, // 0000 1100
+  king = 16,  // 0001 0000
 };
 
-export const uint8_t black = 0b00010000;
+export const uint8_t black = 0b00100000;
 
 // Yes, I know what a vector is
 // An array of vectors won't have inline memory
@@ -32,33 +32,32 @@ struct TravelBytes {
   std::span<const uint8_t> view() const { return {data, used}; }
 };
 
-using Travel = std::array<TravelBytes, 10>;
+using Travel = std::array<TravelBytes, 8>;
 
 // Should be 64 bytes
 export class Square {
 private:
-  // Like a clock
-  // 0 - North, 1 - East, 2 - South, 3 - West
-  // 4 - NorthEast, 5 - SouthEast, 6 - SouthWest, 7 - NorthWest
-  // 8 - Knight, 9 - King
-  // WARNING: broken!!!! Knight and king use 8 bytes max instead of 7!!
+  // 0 - North, 1 - South
+  // 2 - East, 3 - West
+  // 4 - NorthEast, 5 - SouthEast,
+  // 6 - SouthWest, 7 - NorthWest
   Travel square_travel;
 
   constexpr Travel all_travel(uint8_t &square) {
+    if (square > 63)
+      throw std::out_of_range("Size too big!");
+
     Travel square_travel;
 
     north_travel(square, square_travel[0]);
-    east_travel(square, square_travel[1]);
-    south_travel(square, square_travel[2]);
+    south_travel(square, square_travel[1]);
+    east_travel(square, square_travel[2]);
     west_travel(square, square_travel[3]);
 
     north_east_travel(square, square_travel[4]);
     south_east_travel(square, square_travel[5]);
     south_west_travel(square, square_travel[6]);
     north_west_travel(square, square_travel[7]);
-
-    knight_travel(square, square_travel[8]);
-    king_travel(square, square_travel[9]);
 
     return square_travel;
   }
@@ -70,10 +69,11 @@ private:
   // If I subtract 8, I have moved north
   constexpr void north_travel(uint8_t &square, TravelBytes &north) {
     uint8_t i = 0;
-    for (uint8_t pos = square - 8; pos >= 0; pos -= 8) {
+    for (size_t pos = square - 8; pos >= 0; pos -= 8) {
       north.data[i] = pos;
       i++;
     }
+    i--;
     if (i > 7)
       throw std::out_of_range("Size too big!");
     north.used = i;
@@ -81,10 +81,11 @@ private:
 
   constexpr void south_travel(uint8_t &square, TravelBytes &south) {
     uint8_t i = 0;
-    for (uint8_t pos = square + 8; pos < 64; pos += 8) {
+    for (size_t pos = square + 8; pos < 64; pos += 8) {
       south.data[i] = pos;
       i++;
     }
+    i--;
     if (i > 7)
       throw std::out_of_range("Size too big!");
     south.used = i;
@@ -293,23 +294,25 @@ public:
     printf("bishop scan\n");
     for (std::size_t i = 4; i < 8; i++) {
       printf("direction: %lu\n", i);
-      passiveScan(color, tact, pos_board, square_travel[i], 0b00000100);
+      passiveScan(color, tact, pos_board, square_travel[i], 0b00001100);
     }
   }
 
   // find defenders and attackers horizontally, vertically, and diagonally
   void queenPassiveScan(const uint8_t &color, Tactical &tact,
                         const std::array<uint8_t, 64> &pos_board) {
-    printf("queen scan, which is...\n");
-    rookPassiveScan(color, tact, pos_board);
-    bishopPassiveScan(color, tact, pos_board);
+    printf("queen scann");
+    for (std::size_t i = 0; i < 8; i++) {
+      printf("direction: %lu\n", i);
+      passiveScan(color, tact, pos_board, square_travel[i], 0b00001100);
+    }
   }
 
   // find defenders and attackers (knights)
   void knightPassiveScan(const uint8_t &color, Tactical &tact,
                          const std::array<uint8_t, 64> &pos_board) {
     printf("knight scan\n");
-    passiveScan(color, tact, pos_board, square_travel[8], 0b00000100);
+    passiveScan(color, tact, pos_board, square_travel[8], 0b00000010);
   }
 
   // find defenders and attackers (kings)

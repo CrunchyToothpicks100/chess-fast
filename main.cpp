@@ -6,28 +6,16 @@
 import Square;
 
 // clang-format off
-enum class Piece : uint8_t {
-  empty,        // 0000
-  pawn,         // 0001
-  king,         // 0010
-  knight,       // 0011
-  bishop = 4,   // 0100
-  rook = 8,     // 1000
-  queen = 12,   // 1100
-};
-
-const uint8_t black = 0b00010000;
-
 consteval std::array<uint8_t, 64> make_pos_board() {
   std::array<uint8_t, 64> board = {
-      2,  3,  4, 12,  2,  4,  3,  2,
+      8,  2,  4, 12, 16,  4,  2,  8,
       1,  1,  1,  1,  1,  1,  1,  1,
       0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,
       1,  1,  1,  1,  1,  1,  1,  1,
-      2,  3,  4, 12,  2,  4,  3,  2,
+      8,  2,  4, 12, 16,  4,  2,  8,
   };
 
   for (int i = 0; i < 16; ++i)
@@ -53,7 +41,7 @@ int main() {
   print_pos_board_hex(pos_board);
 
   Square a7{11};
-  Tactical a7_tact;
+  Square::Tactical a7_tact;
 
   a7.rookPassiveScan(black, a7_tact, pos_board);
   a7.bishopPassiveScan(black, a7_tact, pos_board);

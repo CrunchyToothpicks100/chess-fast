@@ -5,12 +5,16 @@
       "name": "clang-debug",
       "displayName": "Clang C++20 modules (Debug)",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/clang-debug",
+      "binaryDir": "${sourceDir}/build/",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
         "CMAKE_MAKE_PROGRAM": "/usr/bin/ninja",
-        "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS": "/usr/bin/clang-scan-deps-18"
+        "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS": "/usr/bin/clang-scan-deps-18",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": {
+          "type": "BOOL",
+          "value": "ON"
+        }
       }
     }
   ],
