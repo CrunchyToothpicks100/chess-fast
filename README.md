@@ -1,45 +1,58 @@
-# Chess bot
+# Chess Fast
 
-A C++20 chess engine prototype using named modules. The current executable
-creates the starting board at compile time and prints its piece values as an
-8 × 8 hexadecimal grid. Move generation, search, and a playable interface are
-not implemented yet.
+A C-style chess engine that computes legal moves, checks, checkmate, pins,
+and more. Work in progress. Instead of creating a 2D matrix of "squares",
+this takes a different approach. Each `Piece` has a type (enum), color (bool),
+position (8-bits), and a 64-bit mask.
 
-**AI NOTE**: This README was mostly written with Codex. However, every line of code is typed with a keyboard. AI has been used for research into C++ shenanigans like modules
+Each 64-bit mask represents an 8x8 chess board, and each one is pre-computed
+via `constexpr`. These masks tell you where each `Piece` can travel (by
+default), depending on the type and position. This can be used with other
+bit masks to determine legal moves.
 
-## Project layout
+These masks are written in hexadecimal and stored in `allMasks.cppm`.
 
-- `main.cpp`: piece encoding, starting-board initialization, and board output.
-- `Square.cppm`: exports `Square`; contains directional travel lists, knight
-  destinations, span views, and work-in-progress attack/defense scans.
-- `CMakeLists.txt`: builds `main` and registers `Square.cppm` in a
-  `CXX_MODULES` file set.
-- `CMakePresets.json`: configures a Clang debug build with Ninja.
-- `.clangd`: points clangd to `build/clang-debug/compile_commands.json`.
+*Note: `Piece` currently uses a maskPtr, which gets moved along with the
+position via `movePos()`. This will likely change, since scanning through
+pieces means dereferencing a pointer for each mask, which outweighs the
+benefits of 2 CPU cycle piece movement.*
 
-The program imports `Square` but does not instantiate it or run its scans.
-A successful build therefore does not validate that analysis behavior.
+Theoretically, this can be used to quickly scan through possible moves, attacks,
+and tactics using bit-wise logic rather than iteratively scanning the board
+in each possible direction.
 
-## Board representation
+`DataPiece` inherits from `Piece` and can be used to print masks and other
+data for debugging.
 
-The board is a flat `std::array<int8_t, 64>` with eight consecutive entries per
-row. Empty squares are zero. Pieces use these bit masks:
+The current build uses C++20.
 
-| Value | Meaning |
-| --- | --- |
-| `0x01` | Pawn |
-| `0x02` | Rook |
-| `0x04` | Knight |
-| `0x08` | Bishop |
-| `0x10` | Queen |
-| `0x20` | King |
-| `0x40` | White flag |
-| `0x80` | Black flag |
+## Future
 
-The current initializer sets the black flag on indices 0–15. It leaves the
-pieces at indices 48–63 without the white flag; color encoding is still being
-developed. `make_pos_board()` returns a board computed at compile time, while
-the board in `main()` remains mutable.
+Once legal move logic and game state is done, my next goal would be to create
+a separate UI (or CLI?) that also stores the game state, and then try to
+decouple this from the chess engine. This way, a user sends a move request
+to the chess engine, and then the chess engine sends a response, which updates
+UI separately.
+
+At this point, the chess engine can be used as a relay for a 2-player game.
+This isn't the purpose of the chess engine, but it will probably be good
+for debugging interactively.
+
+Then, we can duplicate the game state for all possible legal moves, and
+then create asynchronous queues for processing tactics, strategy, space,
+tension, king safety, piece activity, etc. If a move is simply "bad" from
+the get-go, the process can be freed and another logical core can double
+it's horsepower. That's the thought, anyways.
+
+The chess engine should also be aware of the clock (and store the clock)
+so that the time spent on each move depends on the complexity of the position
+and the remaining time.
+
+After that, we can test each updated chess engine by having it battle the
+previous chess engine.
+
+After that, try to implement learning algorithms so that the chess engine
+improves itself. I think. We'll see.
 
 ## Build and run
 
@@ -57,37 +70,8 @@ match your installed toolchain.
 ```sh
 cmake --preset clang-debug
 cmake --build --preset clang-debug
-./build/clang-debug/main
+./build/main
 ```
 
 Build output and the compilation database are generated in
-`build/clang-debug`. There is currently no automated test suite.
-
-## Editing with clangd
-
-Configure the project before editing so clangd can read the compilation
-database, including `-std=c++20` and the module interface's compile command.
-Register additional module interfaces in the `CXX_MODULES` file set, then
-configure and build again.
-
-For named-module discovery, use a recent clangd with
-`--experimental-modules-support`. Module tooling remains experimental.
-Standard headers belong in the global module fragment:
-
-```cpp
-module;
-
-#include <vector>
-
-export module Square;
-```
-
-If clangd reports missing builtin headers such as `stddef.h`, check the active
-clangd installation and its resource directory first. Missing headers can
-cause misleading errors inside standard library templates. After replacing
-or reinstalling clangd, restart the editor so it launches the installed server.
-
-References: [clangd modules](https://clangd.llvm.org/features#experimental-c20-modules-support),
-[clangd troubleshooting](https://clangd.llvm.org/troubleshooting#cant-find-compiler-built-in-headers-stddefh-etc),
-[CMake modules](https://cmake.org/cmake/help/latest/manual/cmake-cxxmodules.7.html),
-[Clang standard modules](https://clang.llvm.org/docs/StandardCPlusPlusModules.html).
+`build/`. There is currently no automated test suite.

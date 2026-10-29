@@ -11,5 +11,6 @@ add_executable(main main.cpp)
 
 target_sources(main
   PRIVATE
-    FILE_SET CXX_MODULES FILES Square.cppm
+    FILE_SET CXX_MODULES
+    FILES allMasks.cppm
 )
