@@ -16,12 +16,25 @@
           "value": "ON"
         }
       }
+    },
+    {
+      "name": "clang-release",
+      "displayName": "Clang C++20 modules (Release)",
+      "inherits": "clang-debug",
+      "binaryDir": "${sourceDir}/build/release/",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
     {
       "name": "clang-debug",
       "configurePreset": "clang-debug"
+    },
+    {
+      "name": "clang-release",
+      "configurePreset": "clang-release"
     }
   ]
 }

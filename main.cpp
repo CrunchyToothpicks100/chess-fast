@@ -1,8 +1,15 @@
+#include <algorithm>
+#include <array>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
+#include <numeric>
+#include <random>
+#include <utility>
 
 import allMasks;
 
@@ -53,36 +60,66 @@ import allMasks;
 
 class Piece {
 protected:
-  int8_t type;
-  int8_t pos;
+  uint8_t type;
+  uint8_t pos;
   bool color;
-  const uint64_t *maskPtr;
-
-  void movePos(int8_t delta) {
-    assert(pos + delta < 64 && pos + delta >= 0);
-    maskPtr += delta;   // pray it's not a buffer overflow
-    this->pos += delta; // Set position
-  }
+  uint64_t mask;
 
 public:
-  constexpr Piece(int8_t type, int8_t pos, bool color)
-      : type(type), pos(pos), color(color), maskPtr(maskPiece(type, pos)) {
+  uint64_t getMask() const { return mask; }
+
+  void movePos(int8_t delta) {
+    uint8_t newPos = pos + delta;
+    if (newPos > 63) {
+      printf("Error: could not move piece.\n");
+      printf("pos: %hhu, delta: %hhd, newPos: %hhu\n", pos, delta, newPos);
+      std::exit(1);
+    }
+    mask = setMask(type, newPos);
+    this->pos = newPos; // Set position
+  }
+
+  constexpr uint64_t setMask(uint8_t type, uint8_t pos) {
+    return maskPiece(type, pos);
+
+    mask = 0;
+
+    if (pos % 8 != 0) {
+      mask |= UINT64_C(1) << (pos - 1);
+    }
+    if (pos % 8 != 7) {
+      mask |= UINT64_C(1) << (pos + 1);
+    }
+
+    return mask;
+  }
+
+  constexpr Piece(uint8_t type, uint8_t pos, bool color)
+      : type(type), pos(pos), color(color), mask(setMask(type, pos)) {
     assert(pos < 64 && pos >= 0);
   }
 };
 
 struct DataPiece : Piece {
-  constexpr DataPiece(int8_t type, int8_t pos, bool color)
+  constexpr DataPiece(uint8_t type, uint8_t pos, bool color)
       : Piece(type, pos, color) {}
 
   const char *name() const {
     switch (type) {
-    case PieceType::Rook:
+    case PType::Rook:
       return "Rook";
-    case PieceType::Knight:
+    case PType::Knight:
       return "Knight";
-    case PieceType::King:
+    case PType::Bishop:
+      return "Bishop";
+    case PType::Queen:
+      return "Queen";
+    case PType::King:
       return "King";
+    case PType::WPawn:
+      return "Pawn";
+    case PType::BPawn:
+      return "Pawn";
     default:
       return "";
     }
@@ -107,11 +144,11 @@ struct DataPiece : Piece {
 
   void printMask() const {
     printData();
-    printf(BINARY_PATTERN_64 "\n", BINARY_UINT64_TO_BITS(*maskPtr));
+    printf(BINARY_PATTERN_64 "\n", BINARY_UINT64_TO_BITS(mask));
     printf("\n");
   }
 
-  void printMaskHex() const { printf("%#018lx,\n", *maskPtr); }
+  void printMaskHex() const { printf("%#018lx,\n", mask); }
 
   // Will prevent a move if it violates 2D logic
   void moveMask(bool invalid, int8_t delta) {
@@ -147,57 +184,55 @@ int main() {
   enum { white, black };
 
   constexpr DataPiece kings[] = {
-    {PieceType::King, 56, black},
-    {PieceType::King, 7, white}
+    {PType::King, 3, white},
+    {PType::King, 59, black}
   };
 
   constexpr DataPiece knights[] = {
-    {PieceType::Knight, 57, black},
-    {PieceType::Knight, 6, black}
+    {PType::Knight, 1, white},
+    {PType::Knight, 6, white},
+    {PType::Knight, 57, black},
+    {PType::Knight, 62, black}
+  };
+
+  constexpr DataPiece rooks[] = {
+    {PType::Rook, 0, white},
+    {PType::Rook, 7, white},
+    {PType::Rook, 56, black},
+    {PType::Rook, 63, black}
+  };
+
+  constexpr DataPiece bishops[] = {
+    {PType::Bishop, 2, white},
+    {PType::Bishop, 5, white},
+    {PType::Bishop, 58, black},
+    {PType::Bishop, 61, black},
   };
 
   size_t n_king = sizeof(kings) / sizeof(DataPiece);
   size_t n_knight = sizeof(knights) / sizeof(DataPiece);
+  size_t n_rook = sizeof(rooks) / sizeof(DataPiece);
+  size_t n_bishop = sizeof(bishops) / sizeof(DataPiece);
 
   DataPiece::printPieces(kings, n_king);
   DataPiece::printPieces(knights, n_knight);
+  DataPiece::printPieces(rooks, n_rook);
+  DataPiece::printPieces(bishops, n_bishop);
 
-  DataPiece king{PieceType::King, 32, black};
-  DataPiece knight{PieceType::Knight, 0, black};
+  // Next, implement en-passant-able flag for pawns that moved 2
+  // add blocked flag for pawns with a piece in front of it
+  // Pawn class? with moveMask and attackMask?
+  // Remember that the "Piece web" will be a linked list of pieces
 
-  printf("Let's move the knight! \n\n");
-  knight.moveLeft();
-  knight.printMask();
-  knight.moveLeft();
-  knight.printMask();
-  knight.moveLeft();
-  knight.printMask();
-  knight.moveLeft();
-  knight.printMask();
-  knight.moveLeft();
-  knight.printMask();
-  knight.moveLeft();
-  knight.printMask();
-  knight.moveLeft();
-  knight.printMask();
+  DataPiece bpawn{PType::BPawn, 0, black};
 
-  knight.moveUp();
-  knight.printMask();
-  knight.moveUp();
-  knight.printMask();
-  knight.moveUp();
-  knight.printMask();
-  knight.moveUp();
-  knight.printMask();
-  knight.moveUp();
-  knight.printMask();
-  knight.moveUp();
-  knight.printMask();
-  knight.moveUp();
-  knight.printMask();
-
-  printf("Black King is %lu bytes!\n", sizeof(king));
-  printf("Black Rook is %lu bytes!\n", sizeof(knight));
+  printf("Let's move the pawn! \n\n");
+  for (int i = 0; i < 64; i++) {
+    bpawn.printMask();
+    if (i < 63) {
+      bpawn.movePos(1);
+    }
+  }
 
   return 0;
 }
